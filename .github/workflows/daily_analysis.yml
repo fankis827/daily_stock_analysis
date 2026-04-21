@@ -2,7 +2,7 @@ name: Daily Stock Analysis
 
 on:
   schedule:
-    - cron: '30 10 * * 1-5'
+    - cron: '30 10 * 1-5'
   workflow_dispatch:
 
 jobs:
@@ -20,6 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+          pip install python-docx  # 安装生成docx依赖
 
       - name: Run Analysis
         env:
@@ -33,15 +34,29 @@ jobs:
         run: |
           python main.py
 
-      - name: Send Email
+      - name: Convert MD to DOCX
+        run: |
+          for f in reports/*.md; do
+            python -c "
+import docx
+import os
+name = os.path.basename('$f').replace('.md', '')
+doc = docx.Document()
+with open('$f', 'r', encoding='utf-8') as f:
+    doc.add_paragraph(f.read())
+doc.save(f'reports/{name}.docx')
+"
+          done
+
+      - name: Send Email with DOCX
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.163.com
           server_port: 465
           username: ${{ secrets.EMAIL_FROM }}
           password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: 📈 每日股票分析报告
-          body: 今日分析完成
+          subject: 📈 每日股票分析报告(DOCX版)
+          body: 今日股票分析报告已生成，附件为DOCX格式
           to: ${{ secrets.EMAIL_TO }}
-          from: Stock Bot <${{ secrets.EMAIL_FROM }}>
+          from: 股票分析机器人 <${{ secrets.EMAIL_FROM }}>
           attachments: reports/*.docx

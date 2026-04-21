@@ -2,14 +2,14 @@ name: Daily Stock Analysis
 
 on:
   schedule:
-    - cron: '30 10 * * 1-5'  # 北京时间 18:30 工作日自动运行
+    - cron: '30 10 * * 1-5'
   workflow_dispatch:
 
 jobs:
-  run-analysis:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -19,21 +19,21 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run analysis
+      - name: Run Analysis
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_MODEL_NAME: ${{ secrets.LLM_MODEL_NAME }}
-          PUSH_KEY: ${{ secrets.PUSH_KEY }}
-          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          STOCK_LIST: ${{ secrets.STOCK_LIST }}
         run: |
           python main.py
 
-      # 每日邮件推送（163邮箱）
-      - name: Send report to email
+      - name: Send Email
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.163.com
@@ -41,7 +41,7 @@ jobs:
           username: ${{ secrets.EMAIL_FROM }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: 📈 每日股票分析报告
-          body: 今日股票分析已完成，请查收附件。
+          body: 今日分析完成
           to: ${{ secrets.EMAIL_TO }}
-          from: 股票分析机器人 <${{ secrets.EMAIL_FROM }}>
-          attachments: ./reports/*.md
+          from: Stock Bot <${{ secrets.EMAIL_FROM }}>
+          attachments: reports/*.docx

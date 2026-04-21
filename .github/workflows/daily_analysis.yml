@@ -2,9 +2,8 @@ name: Daily Stock Analysis
 
 on:
   schedule:
-    # 北京时间工作日 18:30 自动运行（UTC时间10:30）
-    - cron: '30 10 * * 1-5'
-  workflow_dispatch:  # 支持手动触发
+    - cron: '30 10 * * 1-5'  # 北京时间 18:30 工作日自动运行
+  workflow_dispatch:
 
 jobs:
   run-analysis:
@@ -23,7 +22,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run daily stock analysis
+      - name: Run analysis
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
@@ -33,20 +32,16 @@ jobs:
         run: |
           python main.py
 
-      # 新增：邮件推送步骤（QQ邮箱为例）
-      - name: Send analysis report via email
+      # 每日邮件推送（163邮箱）
+      - name: Send report to email
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.qq.com
+          server_address: smtp.163.com
           server_port: 465
           username: ${{ secrets.EMAIL_FROM }}
           password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "📈 每日股票分析报告 - ${{ github.sha }}"
-          body: |
-            你好！
-            
-            今日股票分析报告已生成，请查收附件。
-            报告自动生成时间：${{ github.event.head_commit.timestamp }}
+          subject: 📈 每日股票分析报告
+          body: 今日股票分析已完成，请查收附件。
           to: ${{ secrets.EMAIL_TO }}
-          from: "每日股票分析机器人 <${{ secrets.EMAIL_FROM }}>"
+          from: 股票分析机器人 <${{ secrets.EMAIL_FROM }}>
           attachments: ./reports/*.md
